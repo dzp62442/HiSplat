@@ -1,0 +1,14 @@
+datasets/
+checkpoints/
+taming/
+build/
+pretrained/
+*.so
+*.egg-info/
+*output*
+**/__pycache__
+**/.DS_Store
+*workdirs*
+**/.cache
+latest-run/
+latest-run

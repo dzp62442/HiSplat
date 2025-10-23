@@ -33,7 +33,7 @@ It is recommended to use Anaconda to create a virtual environment.
 conda create -n hisplat python=3.10
 conda activate hisplat
 # install pytorch
-pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
+pip install numpy==1.26.3 torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
 # install other requirements
 pip install -r requirements.txt
 ```
@@ -88,17 +88,17 @@ To render novel views and compute evaluation metrics from a pretrained model,
 
 ```bash
 # Testing on RealEstate10K (input 2 views)
-python -m src.main +experiment=re10k checkpointing.load=./hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_re10k.json test.compute_scores=true output_dir=test_re10k
+python -m src.main +experiment=re10k checkpointing.load=./checkpoints/hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_re10k.json test.compute_scores=true output_dir=test_re10k
 # Testing on ACID (input 2 views)
-python -m src.main +experiment=acid checkpointing.load=./hisplat_acid.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_acid.json test.compute_scores=true output_dir=test_acid
+python -m src.main +experiment=acid checkpointing.load=./checkpoints/hisplat_acid.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_acid.json test.compute_scores=true output_dir=test_acid
 # Cross-dataset testing RealEstate10K -> DTU (input 2 or 3 views)
-python -m src.main +experiment=dtu checkpointing.load=./hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_dtu_nctx2.json test.compute_scores=true output_dir=test_dtu
-python -m src.main +experiment=dtu checkpointing.load=./hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_dtu_nctx3.json test.compute_scores=true output_dir=test_dtu dataset.view_sampler.num_context_views=3
+python -m src.main +experiment=dtu checkpointing.load=./checkpoints/hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_dtu_nctx2.json test.compute_scores=true output_dir=test_dtu
+python -m src.main +experiment=dtu checkpointing.load=./checkpoints/hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_dtu_nctx3.json test.compute_scores=true output_dir=test_dtu dataset.view_sampler.num_context_views=3
 # Cross-dataset testing RealEstate10K -> ACID (input 2 views)
-python -m src.main +experiment=acid checkpointing.load=./hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_acid.json test.compute_scores=true output_dir=test_acid
+python -m src.main +experiment=acid checkpointing.load=./checkpoints/hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_acid.json test.compute_scores=true output_dir=test_acid
 # Cross-dataset testing RealEstate10K -> Replica (input 2 or 3 views)
-python -m src.main +experiment=replica checkpointing.load=./hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_replica_nctx2.json test.compute_scores=true output_dir=test_replica
-python -m src.main +experiment=replica checkpointing.load=./hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_replica_nctx3.json test.compute_scores=true output_dir=test_replica dataset.view_sampler.num_context_views=3
+python -m src.main +experiment=replica checkpointing.load=./checkpoints/hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_replica_nctx2.json test.compute_scores=true output_dir=test_replica
+python -m src.main +experiment=replica checkpointing.load=./checkpoints/hisplat_re10k.ckpt mode=test dataset/view_sampler=evaluation dataset.view_sampler.index_path=assets/evaluation_index_replica_nctx3.json test.compute_scores=true output_dir=test_replica dataset.view_sampler.num_context_views=3
 ```
 
 ### 🔥 Training

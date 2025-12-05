@@ -7,9 +7,9 @@ defaults:
 
 wandb:
   project: hisplat
-  entity: placeholder
+  entity: dzp62442-DROPS
   name: placeholder
-  mode: offline #disabled
+  mode: online
   id: null
 
 use_tensorboard: null

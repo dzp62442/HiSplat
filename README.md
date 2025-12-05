@@ -1,3 +1,15 @@
+在 OmniScene 数据集上与 SVF-GS 进行对比
+
+### 训练
+
+TODO
+
+### 测试
+
+TODO
+
+---
+
 # HiSplat
 
 The official implementation of **HiSplat: Hierarchical 3D Gaussian Splatting for Generalizable Sparse-View Reconstruction**

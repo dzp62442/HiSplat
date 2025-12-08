@@ -1163,7 +1163,29 @@ class UNetModel(nn.Module):
                 h = module(h)
 
         for module in self.output_blocks:
-            h = th.cat([h, hs.pop()], dim=1)
+            skip = hs.pop()
+            if skip.shape[-2:] != h.shape[-2:]:
+                h_h, h_w = h.shape[-2], h.shape[-1]
+                skip_h, skip_w = skip.shape[-2], skip.shape[-1]
+                if skip_h != h_h:
+                    diff = skip_h - h_h
+                    if diff > 0:
+                        start = diff // 2
+                        skip = skip[..., start : start + h_h, :]
+                    else:
+                        start = (-diff) // 2
+                        h = h[..., start : start + skip_h, :]
+                        h_h = skip_h
+                if skip_w != h_w:
+                    diff = skip_w - h_w
+                    if diff > 0:
+                        start = diff // 2
+                        skip = skip[..., start : start + h_w]
+                    else:
+                        start = (-diff) // 2
+                        h = h[..., start : start + skip_w]
+                        h_w = skip_w
+            h = th.cat([h, skip], dim=1)
             # h = module(h, emb, context)
             if self.cross_attn_condition:
                 for submodule in module:

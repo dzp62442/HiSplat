@@ -2,7 +2,10 @@
 
 ### 训练
 
-TODO
+```shell
+python -m src.main +experiment=omniscene_112x200 \
+output_dir=checkpoints/omniscene-112x200-hisplat
+```
 
 ### 测试
 

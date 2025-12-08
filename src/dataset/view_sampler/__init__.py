@@ -34,7 +34,16 @@ def get_view_sampler(
 ) -> ViewSampler[Any]:
     # TODO: only a temporary fix, need to support cfg input
     if not stage == "train":
-        dataset_name = get_cfg().dataset.roots[0].split("/")[-1]
+        cfg_dataset = get_cfg().dataset
+        dataset_name = cfg_dataset.name if "name" in cfg_dataset else cfg_dataset.roots[0].split("/")[-1]
+        if dataset_name == "omniscene":
+            return VIEW_SAMPLERS[cfg.name](
+                cfg,
+                stage,
+                overfit,
+                cameras_are_circular,
+                step_tracker,
+            )
         if dataset_name == "dtu":
             index_path = f'assets/evaluation_index_dtu_nctx{get_cfg().dataset.view_sampler.num_context_views}.json'
         elif dataset_name == "re10k":

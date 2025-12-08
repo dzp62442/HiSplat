@@ -73,6 +73,7 @@ class TrainCfg:
     align_3d: bool | float
     align_depth: bool | float
     normal_norm: bool
+    use_dynamic_mask: bool
 
 
 @runtime_checkable
@@ -141,6 +142,16 @@ class ModelWrapper(LightningModule):
         # Run the model and get gaussians
         gaussian_dict, result_dict = self.encoder(batch["context"], self.global_step, False, scene_names=batch["scene"])
         target_gt = batch["target"]["image"]
+        valid_loss_mask = None
+        if (
+            self.train_cfg.use_dynamic_mask
+            and "masks" in batch["target"]
+            and batch["target"]["masks"] is not None
+        ):
+            masks = batch["target"]["masks"]
+            if masks.ndim == 4:
+                masks = masks.to(torch.bool)
+                valid_loss_mask = (~masks).unsqueeze(2).expand(-1, -1, target_gt.shape[2], -1, -1)
         # For three resolutions, render them
         total_loss = 0
         loss_dict = {}
@@ -165,7 +176,13 @@ class ModelWrapper(LightningModule):
             sup_batch = copy.deepcopy(batch)
             # Compute and log loss.
             for loss_fn in self.losses:
-                loss = loss_fn.forward(output, sup_batch, gaussians, self.global_step)
+                loss = loss_fn.forward(
+                    output,
+                    sup_batch,
+                    gaussians,
+                    self.global_step,
+                    valid_loss_mask,
+                )
                 self.log(f"loss/{loss_fn.name}_{i}", loss)
                 loss_dict[f"{loss_fn.name}_{i}"] = loss.item()
                 total_loss = total_loss + loss

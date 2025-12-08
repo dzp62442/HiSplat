@@ -26,8 +26,14 @@ class LossMse(Loss[LossMseCfg, LossMseCfgWrapper]):
         batch: BatchedExample,
         gaussians: Gaussians,
         global_step: int,
+        valid_mask: Tensor | None = None,
     ) -> Float[Tensor, ""]:
         delta = prediction.color - batch["target"]["image"]
+        if valid_mask is not None:
+            mask = valid_mask.to(delta.device)
+            mask = mask.to(delta.dtype)
+            denom = mask.sum().clamp(min=1.0)
+            return self.cfg.weight * ((mask * (delta**2)).sum() / denom)
         return self.cfg.weight * (delta**2).mean()
 
     def dynamic_forward(

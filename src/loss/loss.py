@@ -32,6 +32,7 @@ class Loss(nn.Module, ABC, Generic[T_cfg, T_wrapper]):
         batch: BatchedExample,
         gaussians: Gaussians,
         global_step: int,
+        valid_mask: Tensor | None = None,
     ) -> Float[Tensor, ""]:
         pass
 

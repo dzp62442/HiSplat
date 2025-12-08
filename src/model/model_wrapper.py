@@ -353,8 +353,9 @@ class ModelWrapper(LightningModule):
             rgb_softmax = output.color[0]
             # for debug
             v = result_dict[f"stage{i}"]["depths"].size(1)
+            h_feat, w_feat = result_dict[f"stage{i}"].get("feature_hw", (64 * 2**i, 64 * 2**i))
             fine_depth_i = F.interpolate(
-                result_dict[f"stage{i}"]["depths"].reshape(b * v, 64 * 2**i, 64 * 2**i)[:, None],
+                result_dict[f"stage{i}"]["depths"].reshape(b * v, h_feat, w_feat)[:, None],
                 size=(256, 256),
                 mode="bilinear",
             )[0, 0]

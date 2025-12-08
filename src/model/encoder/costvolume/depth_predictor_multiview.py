@@ -243,6 +243,7 @@ class DepthPredictorMultiViewPyramid(nn.Module):
             result_dict[f"stage{i}"]["densities"] = densities
             result_dict[f"stage{i}"]["raw_gaussians"] = raw_gaussians
             result_dict[f"stage{i}"]["coarse_disps"] = coarse_disps
+            result_dict[f"stage{i}"]["feature_hw"] = tuple(cnn_feature[i].shape[-2:])
             image_size = cnn_feature[i].shape[-2:]
             return_gaussians, scales, rotations = encoder.convert_to_gaussians_single_stge(
                 result_dict[f"stage{i}"]["raw_gaussians"],
@@ -316,23 +317,22 @@ class DepthPredictorMultiViewPyramid(nn.Module):
         self, raw_gaussians, stage_id, result_dict, mask, gaussian_dict, densities_now, with_density=False
     ):
         b, v, r, c = raw_gaussians.shape
-        h, w = int(r**0.5), int(r**0.5)
+        current_h, current_w = result_dict[f"stage{stage_id}"]["feature_hw"]
         raw_gaussians_pre, raw_gaussians_now, mask_list = [], [], []
         for j in range(stage_id):
             raw_gaussians_pre_j = result_dict[f"stage{j}"]["raw_gaussians"]
-            raw_gaussians_pre.append(rearrange(raw_gaussians_pre_j, "b v r c -> b (v r) c"))
-            r_pre = raw_gaussians_pre_j.shape[2]
-            h_pre, w_pre = int(r_pre**0.5), int(r_pre**0.5)
+            h_pre, w_pre = result_dict[f"stage{j}"]["feature_hw"]
+            raw_gaussians_pre.append(rearrange(raw_gaussians_pre_j, "b v (h w) c -> b (v h w) c", h=h_pre, w=w_pre))
 
             raw_gaussians_now_j = F.interpolate(
-                rearrange(raw_gaussians, "b v (h w) c -> (b v) c h w", h=h),
+                rearrange(raw_gaussians, "b v (h w) c -> (b v) c h w", h=current_h, w=current_w),
                 size=(h_pre, w_pre),
                 mode="bilinear",
                 align_corners=True,
             )
             if with_density:
                 densities_now_reshape = F.interpolate(
-                    rearrange(densities_now, "b v (h w) c1 c2-> (b v) (c1 c2) h w", h=h),
+                    rearrange(densities_now, "b v (h w) c1 c2-> (b v) (c1 c2) h w", h=current_h, w=current_w),
                     size=(h_pre, w_pre),
                     mode="bilinear",
                     align_corners=True,

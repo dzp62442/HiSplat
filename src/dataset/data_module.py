@@ -102,16 +102,14 @@ class DataModule(LightningDataModule):
         )
 
     def val_dataloader(self):
-        # dataset = get_dataset(self.dataset_cfg, "val", self.step_tracker)
-        dataset = get_dataset(self.dataset_cfg, "test", self.step_tracker)
-        # dataset = self.dataset_shim(dataset, "val")
-        dataset = self.dataset_shim(dataset, "test")
+        dataset = get_dataset(self.dataset_cfg, "val", self.step_tracker)
+        dataset = self.dataset_shim(dataset, "val")
         try:
             world_size = dist.get_world_size()
         except:
             world_size = 1
         return DataLoader(
-            ValidationWrapper(dataset, 100 * world_size),
+            ValidationWrapper(dataset, 1),  # ValidationWrapper(dataset, 100 * world_size)
             self.data_loader_cfg.val.batch_size,
             num_workers=self.data_loader_cfg.val.num_workers,
             generator=self.get_generator(self.data_loader_cfg.val),

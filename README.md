@@ -6,14 +6,14 @@
 
 ```shell
 python -m src.main +experiment=omniscene_112x200 \
-output_dir=checkpoints/omniscene-112x200-hisplat
+output_dir=../checkpoints/omniscene-112x200-hisplat
 ```
 
 ### 测试
 
 ```shell
 python -m src.main +experiment=omniscene_112x200 \
-checkpointing.load=outputs/checkpoints/omniscene-112x200-hisplat/checkpoints/epoch_0-step_100000.ckpt \
+checkpointing.load=checkpoints/omniscene-112x200-hisplat/checkpoints/epoch_0-step_100000.ckpt \
 output_dir=test/omniscene-112x200-hisplat \
 mode=test \
 wandb.mode=disabled \

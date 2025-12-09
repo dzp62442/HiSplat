@@ -14,7 +14,7 @@ output_dir=../checkpoints/omniscene-112x200-hisplat
 ```shell
 python -m src.main +experiment=omniscene_112x200 \
 checkpointing.load=checkpoints/omniscene-112x200-hisplat/checkpoints/epoch_0-step_100000.ckpt \
-output_dir=test/omniscene-112x200-hisplat \
+output_dir=omniscene-112x200-hisplat \
 mode=test \
 wandb.mode=disabled \
 test.compute_scores=true

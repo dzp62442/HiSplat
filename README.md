@@ -1,5 +1,7 @@
 在 OmniScene 数据集上与 SVF-GS 进行对比
 
+> output_dir 都以 outputs 文件夹为起点
+
 ### 训练
 
 ```shell
@@ -9,7 +11,14 @@ output_dir=checkpoints/omniscene-112x200-hisplat
 
 ### 测试
 
-TODO
+```shell
+python -m src.main +experiment=omniscene_112x200 \
+checkpointing.load=outputs/checkpoints/omniscene-112x200-hisplat/checkpoints/epoch_0-step_100000.ckpt \
+output_dir=test/omniscene-112x200-hisplat \
+mode=test \
+wandb.mode=disabled \
+test.compute_scores=true
+```
 
 ---
 

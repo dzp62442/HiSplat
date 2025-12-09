@@ -269,12 +269,13 @@ class ModelWrapper(LightningModule):
             self.test_step_outputs[f"ssim"].append(ssim.mean().item())
             self.test_step_outputs[f"lpips"].append(lpips.mean().item())
             # Create the parent directory if it doesn't already exist.
-            log_path = path / scene / "psnr.txt"
-            psnr_log = [f"example{j}: {psnr[j].item():.2f} \n" for j in range(len(psnr))]
-            psnr_log = reduce(lambda a, b: a + b, psnr_log)
-            os.makedirs(str(path / scene), exist_ok=True)
-            with open(log_path, "w") as f:
-                f.write(psnr_log)
+            if False:
+                log_path = path / scene / "psnr.txt"
+                psnr_log = [f"example{j}: {psnr[j].item():.2f} \n" for j in range(len(psnr))]
+                psnr_log = reduce(lambda a, b: a + b, psnr_log)
+                os.makedirs(str(path / scene), exist_ok=True)
+                with open(log_path, "w") as f:
+                    f.write(psnr_log)
 
         # Save images.
         if self.test_cfg.save_image:

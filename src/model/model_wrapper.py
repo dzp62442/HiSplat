@@ -22,7 +22,7 @@ from torch import Tensor, nn, optim
 
 from ..dataset.data_module import get_data_shim
 from ..dataset.types import BatchedExample
-from ..evaluation.metrics import compute_lpips, compute_psnr, compute_ssim
+from ..evaluation.metrics import compute_lpips, compute_pcc, compute_psnr, compute_ssim
 from ..global_cfg import get_cfg
 from ..loss import Loss
 from ..misc.benchmarker import Benchmarker
@@ -220,6 +220,14 @@ class ModelWrapper(LightningModule):
         batch: BatchedExample = self.data_shim(batch)
         b, v, _, h, w = batch["target"]["image"].shape
         assert b == 1
+        need_pcc = (
+            self.test_cfg.compute_scores
+            and "rel_depth" in batch["target"]
+            and batch["target"]["rel_depth"] is not None
+        )
+        depth_mode = self.train_cfg.depth_mode
+        if need_pcc and depth_mode is None:
+            depth_mode = "depth"
 
         # Render Gaussians.
         with self.benchmarker.time("encoder"):
@@ -235,7 +243,7 @@ class ModelWrapper(LightningModule):
                 batch["target"]["near"],
                 batch["target"]["far"],
                 (h, w),
-                depth_mode=self.train_cfg.depth_mode,
+                depth_mode=depth_mode,
             )
         (scene,) = batch["scene"]
         name = get_cfg()["wandb"]["name"]
@@ -268,6 +276,15 @@ class ModelWrapper(LightningModule):
             self.test_step_outputs[f"psnr"].append(psnr.mean().item())
             self.test_step_outputs[f"ssim"].append(ssim.mean().item())
             self.test_step_outputs[f"lpips"].append(lpips.mean().item())
+            if need_pcc and output.depth is not None:
+                if f"pcc" not in self.test_step_outputs:
+                    self.test_step_outputs[f"pcc"] = []
+                rel_depth = batch["target"]["rel_depth"]
+                pcc = compute_pcc(
+                    rearrange(rel_depth, "b v h w -> (b v) h w"),
+                    rearrange(output.depth, "b v h w -> (b v) h w"),
+                )
+                self.test_step_outputs[f"pcc"].append(pcc.item())
             # Create the parent directory if it doesn't already exist.
             if False:
                 log_path = path / scene / "psnr.txt"

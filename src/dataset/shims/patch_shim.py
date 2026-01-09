@@ -27,6 +27,8 @@ def apply_patch_shim_to_views(views: BatchedViews, patch_size: int) -> BatchedVi
     }
     if "masks" in views and views["masks"] is not None:
         updated_views["masks"] = views["masks"][:, :, row : row + h_new, col : col + w_new]
+    if "rel_depth" in views and views["rel_depth"] is not None:
+        updated_views["rel_depth"] = views["rel_depth"][:, :, row : row + h_new, col : col + w_new]
     return updated_views
 
 

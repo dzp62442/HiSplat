@@ -50,6 +50,7 @@ class DatasetOmniScene(Dataset):
         cfg: DatasetOmniSceneCfg,
         stage: Stage,
         view_sampler: ViewSampler | None,
+        load_rel_depth: bool | None = None,
     ) -> None:
         super().__init__()
         self.cfg = cfg
@@ -61,6 +62,9 @@ class DatasetOmniScene(Dataset):
         self.dataset_prefix = "/datasets/nuScenes"
         self.near = cfg.near if cfg.near > 0 else 0.5
         self.far = cfg.far if cfg.far > 0 else 100.0
+        self.load_rel_depth = stage == "test" if load_rel_depth is None else load_rel_depth
+        if stage != "test":
+            self.load_rel_depth = False
 
         self.bin_tokens = self._load_bin_tokens(stage)
 
@@ -106,7 +110,12 @@ class DatasetOmniScene(Dataset):
             input_paths.append(img_path)
             input_c2w.append(c2w)
         input_c2w = torch.as_tensor(input_c2w, dtype=torch.float32)
-        input_imgs, input_masks, input_intr = load_conditions(input_paths, self.resolution, is_input=True)
+        input_imgs, input_masks, input_intr, input_rel_depth = load_conditions(
+            input_paths,
+            self.resolution,
+            is_input=True,
+            load_rel_depth=self.load_rel_depth,
+        )
 
         output_paths, output_c2w = [], []
         frame_num = len(bin_info["sensor_info"]["LIDAR_TOP"])
@@ -122,12 +131,19 @@ class DatasetOmniScene(Dataset):
                 output_paths.append(img_path)
                 output_c2w.append(c2w)
         output_c2w = torch.as_tensor(output_c2w, dtype=torch.float32)
-        output_imgs, output_masks, output_intr = load_conditions(output_paths, self.resolution, is_input=False)
+        output_imgs, output_masks, output_intr, output_rel_depth = load_conditions(
+            output_paths,
+            self.resolution,
+            is_input=False,
+            load_rel_depth=self.load_rel_depth,
+        )
 
         output_imgs = torch.cat([output_imgs, input_imgs], dim=0)
         output_masks = torch.cat([output_masks, input_masks], dim=0)
         output_c2w = torch.cat([output_c2w, input_c2w], dim=0)
         output_intr = torch.cat([output_intr, input_intr], dim=0)
+        if output_rel_depth is not None and input_rel_depth is not None:
+            output_rel_depth = torch.cat([output_rel_depth, input_rel_depth], dim=0)
 
         context = {
             "extrinsics": input_c2w,
@@ -146,6 +162,8 @@ class DatasetOmniScene(Dataset):
             "index": torch.arange(len(output_c2w), dtype=torch.long),
             "masks": output_masks,
         }
+        if output_rel_depth is not None:
+            target["rel_depth"] = output_rel_depth
         return {
             "context": context,
             "target": target,

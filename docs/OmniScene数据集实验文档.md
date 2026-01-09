@@ -27,7 +27,24 @@
 - **调用差异**：depthsplat 在 `train.eval_model_every_n_val`>0 时会额外构造一个 evaluation dataloader（覆盖 view sampler）。HiSplat 没有这一分支，因此 OmniScene 的测试需要通过外部命令触发；同时 HiSplat 默认在 `test` 阶段把 view sampler 改成 evaluation，需要特别处理 `dataset.name==omniscene` 的情况以维持 `all` 策略。
 - **可否直接套用 depthsplat 主程**：不建议。两边的 `ModelWrapper`/`Loss` 接口不同，且 HiSplat 的编码器、wandb 配置、checkpoint 行为都与 depthsplat 不同。我们会在 HiSplat 内按其既有风格新增配置项（例如 `train.use_dynamic_mask`）并在 README 中提供 OmniScene 的训练/测试命令，从而保持仓库风格统一。
 
-## 4. 复用与调整清单
+## 4. PCC 指标补充方案
+1. **相对深度加载（仅 test）**：
+   - 参考 DepthSplat 的实现，在 `src/dataset/utils_omniscene.py::load_conditions` 增加 `load_rel_depth` 开关，读取 DepthAnything-v2 预测的 disparity（`samples_dpt_small`/`sweeps_dpt_small` 下的 `.npy`），若发生 resize 需同步缩放。
+   - disparity → 相对深度的处理流程：`ratio = min(disp.max() / (disp.min() + 1e-3), 50)`，`min_val = disp.max() / ratio`，`depth = 1 / max(disp, min_val)`，最后做 min-max 归一化到 `[0, 1]`。
+   - `DatasetOmniScene` 仅在 `stage="test"` 时传入 `load_rel_depth=True`，并在 `target` 中附加 `rel_depth`（形状 `[v, h, w]`）；其他阶段保持 `rel_depth=None` 以降低 IO 压力。
+   - 如需 patch shim，需在 `src/dataset/shims/patch_shim.py` 内对 `rel_depth` 同步中心裁剪，保证与 `image/masks/intrinsics` 对齐（与 `masks` 同类处理）。
+2. **渲染深度结果**：
+   - 当前解码器支持深度输出：`DecoderSplattingCUDA.forward` 在 `depth_mode` 非空时会走 `render_depth_cuda` 并返回 `DecoderOutput.depth`（shape 为 `[b, v, h, w]`）。
+   - 现有 `ModelWrapper.test_step` 默认使用 `self.train_cfg.depth_mode`，若该值为 `None`，测试阶段不会产生深度输出。为计算 PCC，可在测试阶段将 `depth_mode="depth"`（或根据需要选择 `"disparity"/"relative_disparity"`）以获取目标视角的深度渲染结果。
+   - 建议新增测试配置开关（例如 `test.render_depth_for_metrics` 或复用 `test.compute_scores`）以避免非必要的深度渲染开销。
+3. **PCC 计算位置**：
+   - 在 `src/evaluation/metrics.py` 中新增 `compute_pcc`，与 `compute_psnr/compute_ssim/compute_lpips` 放在同一文件，便于统一调用与维护。
+   - 计算时以 `target["rel_depth"]` 与 `output.depth` 为输入，必要时可按掩码过滤动态区域后再做 PCC 统计。
+4. **PCC 统计与汇总**：
+   - 复用 `ModelWrapper.test_step` 的 `test_step_outputs` 机制，新增 `pcc` 记录并与 PSNR/SSIM/LPIPS 同步累计。
+   - 在 `ModelWrapper.on_test_end` 的汇总逻辑中加入 `pcc`，输出 `scores_pcc_all.json` 并写入 `scores_all_avg.json`，保持与现有指标的统计方式一致。
+
+## 5. 复用与调整清单
 - 可直接迁移：`dataset_omniscene.py`、`utils_omniscene.py`、bin 抽样策略、`load_conditions` 的图像/掩码预处理逻辑。
 - 需要适配：`Dataset` 注册、`BatchedViews` 类型、`patch_shim`、`get_view_sampler`（跳过 evaluation 覆盖）、`ModelWrapper`/`Loss` 对动态掩码的支持、README 中的 OmniScene 训练/测试指令。
 - 验证节奏：沿用 depthsplat 的 batch size 与步数，通过 HiSplat 的 `trainer.val_check_interval` 控制验证频率；测试在训练结束后独立运行 `mode=test` 命令。

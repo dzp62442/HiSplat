@@ -20,6 +20,12 @@ wandb.mode=disabled \
 test.compute_scores=true
 ```
 
+- 保存可视化结果
+```bash
+test.save_image=true \
+test.save_video=true
+```
+
 ---
 
 # HiSplat
